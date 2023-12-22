@@ -1,4 +1,4 @@
-use subcommand::{Commands, CommandRunner};
+use subcommands::{Commands, CommandRunner};
 use std::env;
 
 fn print_next(commands: &mut Commands, args: Vec<String>) {
