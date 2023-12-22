@@ -9,6 +9,15 @@ fn print_next(commands: &mut Commands, args: Vec<String>) {
         println!("{}", arg);
     }
 }
+fn reverse(commands: &mut Commands, args: Vec<String>){
+    if args.len() < 1{
+        commands.command_usage("rev");
+    }
+    for arg in args {
+        let reversed: String = arg.chars().rev().collect();
+        println!("{}", reversed);
+    }
+}
 
 fn main() {
     let args: Vec<String> = env::args().collect();
@@ -20,5 +29,6 @@ fn main() {
         println!("foo");
     });
     commands.create("print", "Print next word in new line",print_next);
+    commands.create("rev", "Reverse strings",reverse);
     commands.run();
 }

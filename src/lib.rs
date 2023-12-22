@@ -1,4 +1,4 @@
-use std::collections::HashMap;
+use std::collections::HashMap ;
 
 pub trait CommandRunner {
     fn run(&mut self);
@@ -17,6 +17,32 @@ pub struct Commands {
     commands: HashMap<String, Command>,
 }
 
+fn levenshtein_distance(s1: &str, s2: &str) -> usize{
+    let len1 = s1.chars().count();
+    let len2 = s2.chars().count();
+    let mut matrix: Vec<Vec<usize>> = vec![vec![0; len2 +1]; len1 +1];
+    for i in 0..=len1{
+        for j in 0..=len2 {
+            if i == 0 {
+                matrix[i][j] = j;
+            }else if j == 0{
+                matrix[i][j] = i;
+            }else {
+                let cost = if s1.chars().nth(i-1) == s2.chars().nth(j-1){
+                    0
+                }else{
+                    1
+                };
+                
+                matrix[i][j] = (matrix[i - 1][j] +1)
+                    .min(matrix[i][j - 1] + 1)
+                    .min(matrix[i - 1][j - 1] + cost)
+            }
+        }
+    }
+    matrix[len1][len2]
+}
+
 impl CommandRunner for Commands{
     fn run(&mut self) {
         if self.args.len() < 2 {
@@ -30,7 +56,9 @@ impl CommandRunner for Commands{
             Some(command) => (command.run)(self, args),
             None => {
                 println!("Command not found: {}", command_name);
-                self.usage();
+                if !self.suggest_closest_subcommand_if_exist(command_name.to_owned()){
+                    self.usage();
+                }
             }
         }
     }
@@ -77,6 +105,24 @@ impl Commands {
         self.commands.insert(name.to_string(), command);
     }
 
+    fn suggest_closest_subcommand_if_exist(&self, command: String) -> bool{
+        let commands: Vec<_> = self.commands.keys().collect();
+        let mut closest_commands: Vec<String> = Vec::new();
+        for c in commands{
+            let d = levenshtein_distance(&command, c);
+            if d < 2{
+                closest_commands.push(c.to_owned());
+            }
+        }
+        if closest_commands.len() > 0{
+            println!("May you mean:");
+            for c in closest_commands {
+                println!("    {}",c)
+            }
+            return true
+        }
+        false
+    }
     pub fn command_usage(&self, command_name: &str) {
         let command = self.commands.get(command_name);
         match command {
