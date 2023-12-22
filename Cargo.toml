@@ -5,6 +5,8 @@ edition = "2021"
 authors = ["Mazin Sayed"]
 description = "Command pattern"
 license = "MIT"
+readme = "README.md"
+repository = "https://github.com/SIGMazer/subcommand"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
