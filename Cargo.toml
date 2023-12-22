@@ -2,6 +2,7 @@
 name = "subcommand"
 version = "0.1.0"
 edition = "2021"
+authors = ["Mazin Sayed"]
 description = "Command pattern"
 license = "MIT"
 
