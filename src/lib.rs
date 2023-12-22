@@ -1,21 +1,9 @@
 use std::collections::HashMap ;
 
-pub trait CommandRunner {
-    fn run(&mut self);
-    fn usage(&self);
-    fn help(&mut self, args: Vec<String>);
-}
+pub mod command;
 
-pub struct Command {
-    name: String,
-    description: String,
-    run: fn(&mut Commands,Vec<String>),
-}
+use command::{Command, Commands, CommandRunner, CommandFn};
 
-pub struct Commands {
-    args: Vec<String>,
-    commands: HashMap<String, Command>,
-}
 
 fn levenshtein_distance(s1: &str, s2: &str) -> usize{
     let len1 = s1.chars().count();
@@ -53,22 +41,31 @@ impl CommandRunner for Commands{
         let command_name = &self.args[1];
         let command = self.commands.get(command_name);
         match command {
-            Some(command) => (command.run)(self, args),
+            Some(command) => {
+                if command.name.eq("help"){
+                    self.help();
+                    return;
+                }
+                match command.run {
+                    Some(run) =>{
+                        let result = run(args);
+                        match result {
+                            Ok(_) => {}
+                            Err(err) => {
+                                self.command_usage(command_name);
+                                println!("Error: {}", err);
+                            }
+                        }
+                    }
+                    None => {}
+                }  
+            }
             None => {
-                println!("Command not found: {}", command_name);
-                if !self.suggest_closest_subcommand_if_exist(command_name.to_owned()){
+                if !self.suggest_closest_subcommand_if_exist(command_name.to_string()){
+                    println!("Command not found: {}", command_name);
                     self.usage();
                 }
             }
-        }
-    }
-    fn help(&mut self,_args: Vec<String>) {
-        if self.args.len() <= 2 {
-            self.usage();
-            return;
-        }
-        for arg in &self.args[2..] {
-            self.command_usage(arg);
         }
     }
     fn usage(&self) {
@@ -80,8 +77,16 @@ impl CommandRunner for Commands{
         println!("Commands:");
         for command in commands {
             if let Some(cmd) = self.commands.get(command){
-                println!("    {:<12} {}",cmd.name, cmd.description);
-            }
+                println!("    {:<12} {}",cmd.name, cmd.description); }
+        }
+    }
+     fn help(&self) {
+        if self.args.len() <= 2 {
+            self.usage();
+            return;
+        }
+        for arg in &self.args[2..] {
+            self.command_usage(arg);
         }
     }
 }
@@ -92,15 +97,20 @@ impl Commands {
             commands: HashMap::new(),
             args,
         }; 
-        commands.create("help", "Print help", Commands::help);
+        let command = Command {
+            name: "help".to_string(),
+            description: "Print help".to_string(),
+            run: None
+        };
+        commands.commands.insert(command.name.to_string(), command);
         commands
     }
 
-    pub fn create(&mut self,name: &str, description: &str, run: fn(&mut Commands, Vec<String>)) {
+    pub fn create(&mut self,name: &str, description: &str, run: CommandFn) {
         let command = Command {
             name : name.to_string(),
             description : description.to_string(),
-            run
+            run: Some(run)
         };
         self.commands.insert(name.to_string(), command);
     }
@@ -136,4 +146,42 @@ impl Commands {
         }
     }
 
-}
+
+}#[cfg(test)]
+mod tests {
+    use super::*;
+
+#[test]
+    fn test_commands() {
+        let mut commands = Commands::new(vec!["program".to_string()]);
+
+        commands.create("cmd1", "Description 1", |args| {
+            println!("Command 1 executed with args: {:?}", args);
+            Ok(0)
+        });
+
+        commands.create("cmd2", "Description 2", |args| {
+            println!("Command 2 executed with args: {:?}", args);
+            Ok(0)
+        });
+
+        // Test usage
+        commands.usage();
+
+        // Test help
+        commands.args.push("help".to_string());
+        commands.help();
+
+        // Test running a command
+        commands.args = vec!["program".to_string(), "cmd1".to_string(), "arg1".to_string()];
+        commands.run();
+
+        // Test running an unknown command
+        commands.args = vec!["program".to_string(), "unknown_cmd".to_string()];
+        commands.run();
+
+        // Test running a command with insufficient arguments
+        commands.args = vec!["program".to_string(), "cmd1".to_string()];
+        commands.run();
+
+    }}

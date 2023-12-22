@@ -5,35 +5,32 @@ Subcommand it's library taht lets you easily add subcommand.
 ## Usage
 
 ```rust
-fn print_next(commands: &mut Commands, args: Vec<String>) {
+use std::env;
+use subcommands::command::{ Commands, CommandRunner,CommandResult};
+
+fn print_next(args: Vec<String>) -> CommandResult {
     if args.len() < 1 {
-        commands.command_usage("print");
+        return Err("Not enough arguments".into());
     }
     for arg in args {
         println!("{}", arg);
     }
-}
-fn reverse(commands: &mut Commands, args: Vec<String>){
-    if args.len() < 1{
-        commands.command_usage("rev");
-    }
-    for arg in args {
-        let reversed: String = arg.chars().rev().collect();
-        println!("{}", reversed);
-    }
+    Ok(0)
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
     let mut commands = Commands::new(args);
-    commands.create("hello", "Prints hello world",|_commands, _args| {
-        println!("Hello world");
-    });
-    commands.create("foo", "Prints foo",|_commands, _args| {
-        println!("foo");
-    });
+    commands.create("cmd1", "Description 1", |args| {
+            println!("Command 1 executed with args: {:?}", args);
+            Ok(0)
+      });
+
+    commands.create("cmd2", "Description 2", |args| {
+            println!("Command 2 executed with args: {:?}", args);
+            Ok(0)
+      });
     commands.create("print", "Print next word in new line",print_next);
-    commands.create("rev", "Reverse strings",reverse);
     commands.run();
 }
 
