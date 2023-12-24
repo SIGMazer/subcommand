@@ -20,6 +20,6 @@ pub struct Command {
 }
 
 pub struct Commands {
-   pub args: Vec<String>,
-   pub commands: HashMap<String, Command>,
+    pub args: Vec<String>,
+    pub commands: HashMap<String, Command>,
 }
